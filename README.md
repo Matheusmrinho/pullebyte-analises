@@ -1,7 +1,5 @@
 # PISI3 - BSI - UFRPE
 
-por: Gabriel Alves (<gabriel.alves@ufrpe.br>)
-
 Este projeto é utilizado para as aulas da disciplina de Projeto Interdisciplinar para Sistemas de Informação 3 (PISI3), do 3° período do curso de Bacharelado em Sistemas de Informação (BSI) da Sede, da Universidade Federal Rural de Pernambuco (UFRPE).
 
 ## Instalação
