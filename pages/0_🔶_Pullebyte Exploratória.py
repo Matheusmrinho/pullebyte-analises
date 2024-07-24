@@ -34,8 +34,8 @@ def building_profile(caminho,arquivo):
     profile = ProfileReport(df,title=f"{arquivo} Dataset")
     profile.to_file(f"reports/{nome_dataframe}.html")
     st.session_state[arquivo] = df
-    st.write(profile.to_file)
-    st.write(st.session_state[arquivo])
+    # st.write(profile.to_file)
+    # st.write(st.session_state[arquivo])
 
 def build_body():
     # data = load_data()
@@ -53,11 +53,11 @@ def build_body():
 
 
 def mostrar_profile():
-    df_name = st.session_state.dataset
-    if df_name not in st.session_state:
+    nome_dataframe = st.session_state.dataset
+    if nome_dataframe not in st.session_state:
         return
-    st.write(f'Dataset: <i>{df_name}</i>', unsafe_allow_html=True)
-    report_file = open(f'reports/{df_name}.html', 'r', encoding='utf-8')
+    st.write(f'Dataset: <i>{nome_dataframe}</i>', unsafe_allow_html=True)
+    report_file = open(f'reports/{nome_dataframe}.html', 'r', encoding='utf-8')
     source_code = report_file.read() 
     components.html(source_code, height=400, scrolling=True)
 
