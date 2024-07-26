@@ -24,7 +24,7 @@ def fuzzy_match(name, choices):
 df_players['matched_name'] = df_players['name'].apply(lambda x: fuzzy_match(x, df_keystats[merge_key]))
 df_players.dropna(subset=['matched_name'], inplace=True)
 
-df_combined = pd.merge(df_keystats, df_players, left_on=merge_key, right_on='matched_name', how='left').drop_duplicates(subset=['player_name'])
+df_combined = pd.merge(df_keystats, df_players, left_on=merge_key, right_on='matched_name', how='left').drop_duplicates(subset=['player_name', 'club_keyStats'])
 
 output_path = r'DataSet Project/merge-data-by-clubs/merge-data-by-clubs.parquet'
 df_combined.to_parquet(output_path, index=False)
