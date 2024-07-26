@@ -20,7 +20,7 @@ def build_header():
 #     return data
 
 def  lista_parquet():
-    diretorio = "C:/Users/maini/dir/pyhton/PISI3/test_2/pullebyte-analises/DataSet Project/DataSets Parquet"
+    diretorio = "DataSet Project/DataSets Parquet"
     return [i for i in os.listdir(diretorio) if i.endswith('.parquet')]
 
 def leitura_parquet(arquivo):
@@ -41,7 +41,7 @@ def build_body():
     # data = load_data()
     st.subheader("Selecione o dataset:")
     col1, col2 = st.columns([.3,.7])
-    caminho = "C:/Users/maini/dir/pyhton/PISI3/test_2/pullebyte-analises/DataSet Project/DataSets Parquet/"
+    caminho = "DataSet Project/DataSets Parquet/"
     arquivo = col1.selectbox("\n",lista_parquet(),label_visibility='collapsed',key='dataset')
     caminho += arquivo
     botao_placeholder = col2.empty()
