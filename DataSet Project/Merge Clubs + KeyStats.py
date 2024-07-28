@@ -1,30 +1,26 @@
 import pandas as pd
 import unidecode
 from fuzzywuzzy import process, fuzz
-import time
 
-start_time = time.time()
-df_players = pd.read_parquet(r'DataSet Project/football-transfermarkt-dataset-01/parquet/clubs.parquet')
-df_keystats = pd.read_parquet(r'DataSet Project/ucl-matches-dataset-02/parquet/key_stats.parquet')
-print(f"Tempo de carregamento dos dados: {time.time() - start_time:.2f} segundos")
+clubs_data = pd.read_parquet(r'DataSet Project/football-transfermarkt-dataset-01/parquet/clubs.parquet')
+keystats_data = pd.read_parquet(r'DataSet Project/ucl-matches-dataset-02/parquet/key_stats.parquet')
 
-df_players['name'] = df_players['name'].str.lower().str.strip().apply(unidecode.unidecode)
-if 'club' in df_keystats.columns:
-    df_keystats['club'] = df_keystats['club'].str.lower().str.strip().apply(unidecode.unidecode)
-    merge_key = 'club'
-else:
-    raise KeyError("Coluna 'club' não encontrada em df_keystats")
+clubs_data['name'] = clubs_data['name'].str.lower().apply(unidecode.unidecode)
+keystats_data['club'] = keystats_data['club'].str.lower().apply(unidecode.unidecode)
 
-min_similarity = 75
+min_similarity = 65
 
 def fuzzy_match(name, choices):
+    # match = process.extractOne(name, choices, scorer=fuzz.token_set_ratio)
     match = process.extractOne(name, choices, scorer=fuzz.token_set_ratio)
-    return match[0] if match and match[1] >= min_similarity else None
+    print(name, "->",match[0], match[1], choices[match[2]]) # match[2] is the index of the matched string in the choices list match[0] is the matched string match[1] is the similarity score
+    print('---')
+    return match[0] if match[1] >= min_similarity else None
 
-df_players['matched_name'] = df_players['name'].apply(lambda x: fuzzy_match(x, df_keystats[merge_key]))
-df_players.dropna(subset=['matched_name'], inplace=True)
+clubs_data['matched_name'] = clubs_data['name'].apply(lambda x: fuzzy_match(x, keystats_data['club']))
+clubs_data.dropna(subset=['matched_name'], inplace=True)
 
-df_combined = pd.merge(df_keystats, df_players, left_on=merge_key, right_on='matched_name', how='left').drop_duplicates(subset=['player_name', 'club_keyStats'])
+merged_data = pd.merge(keystats_data, clubs_data, left_on='club', right_on='matched_name', how='left').drop_duplicates(subset=['player_name', 'club'])
 
 output_path = r'DataSet Project/merge-data-by-clubs/merge-data-by-clubs.parquet'
-df_combined.to_parquet(output_path, index=False)
+merged_data.to_parquet(output_path, index=False)
