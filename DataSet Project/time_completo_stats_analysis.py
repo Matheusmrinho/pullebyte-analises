@@ -108,5 +108,6 @@ club_data = {
 for name, df in club_data.items():
     club_data[name] = df.drop_duplicates(subset=['player_name'])
 
+time_completo_df.to_parquet('DataSet Project/merge-data-by-clubs/merge-time-completo.parquet')
 # df_exibir = club_data['Man City']
 # df_exibir
