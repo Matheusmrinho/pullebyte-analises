@@ -195,3 +195,56 @@ ax.set_xlabel('Tipo de Chute')
 sns.despine(trim=True)
 
 st.pyplot(fig)
+
+#==============================================================================#
+
+goalkeeping_df = load_data(r'DataSet Project/ucl-matches-dataset-02/parquet/goalkeeping.parquet')
+
+# Calcular defesas e gols sofridos por jogo
+goalkeeping_df['saved_per_game'] = goalkeeping_df['saved'] / goalkeeping_df['match_played']
+goalkeeping_df['conceded_per_game'] = goalkeeping_df['conceded'] / goalkeeping_df['match_played']
+
+# Filtrar apenas as colunas relevantes
+comparison_df = goalkeeping_df[['player_name', 'club', 'saved', 'saved_per_game', 'conceded', 'conceded_per_game']]
+
+st.title("Comparativo de Goleiros")
+st.markdown("Escolha os times para comparar a eficiência dos goleiros em defesas e gols sofridos.")
+
+# Selecionar times para comparação
+times_selecionados = st.multiselect("Escolha os times para comparar goleiros:", comparison_df['club'].unique(), default=['Bayern'])
+
+# Filtrar os dados pelos times selecionados
+if times_selecionados:
+    comparison_df_filtered = comparison_df[comparison_df['club'].isin(times_selecionados)]
+
+    # Criar uma coluna combinando o nome do jogador e o clube
+    comparison_df_filtered['player_club'] = comparison_df_filtered['player_name'] + "\n(" + comparison_df_filtered['club'] + ")"
+
+    # Preparar os dados para o gráfico
+    comparison_melted = comparison_df_filtered.melt(
+        id_vars=['player_club'], 
+        value_vars=['saved', 'conceded'], 
+        var_name='Tipo', 
+        value_name='Quantidade'
+    )
+    # Mapear os rótulos dos tipos de estatísticas
+    tipo_labels = {
+        'saved': 'Defesas',
+        'conceded': 'Gols Sofridos'
+    }
+    comparison_melted['Tipo'] = comparison_melted['Tipo'].map(tipo_labels)
+
+    # Plotando o gráfico de comparação entre goleiros
+    plt.figure(figsize=(16, 10))
+    sns.barplot(data=comparison_melted, x='player_club', y='Quantidade', hue='Tipo', palette='Set2')
+    
+    plt.xticks(rotation=0, ha='center')
+    plt.title('Comparação de Defesas e Gols Sofridos por Goleiro')
+    plt.xlabel('Nome do Goleiro (Clube)')
+    plt.ylabel('Quantidade')
+    sns.despine(trim=True)
+    
+    # Mostrar o gráfico no Streamlit
+    st.pyplot(plt)
+else:
+    st.markdown("**Selecione pelo menos um time para visualização.**")
