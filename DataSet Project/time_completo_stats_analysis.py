@@ -1,12 +1,13 @@
 import pandas as pd
 
-keyStats_df = pd.read_parquet(r"DataSet Project\merge-data-by-clubs\merge-data-by-clubs.parquet")
-attacking_df = pd.read_parquet(r"DataSet Project\ucl-matches-dataset-02\parquet\attacking.parquet")
-defending_df = pd.read_parquet(r"DataSet Project\ucl-matches-dataset-02\parquet\defending.parquet")
-attempts_df = pd.read_parquet(r"DataSet Project\ucl-matches-dataset-02\parquet\attempts.parquet")
-goalkepping_df = pd.read_parquet(r"DataSet Project\ucl-matches-dataset-02\parquet\goalkeeping.parquet")
-goals_df = pd.read_parquet(r"DataSet Project\ucl-matches-dataset-02\parquet\goals.parquet")
-distribution_df = pd.read_parquet(r"DataSet Project\ucl-matches-dataset-02\parquet\distributon.parquet")
+keyStats_df = pd.read_parquet(r"DataSet Project/merge-data-by-clubs/merge-data-by-clubs.parquet")
+attacking_df = pd.read_parquet(r"DataSet Project/ucl-matches-dataset-02/parquet/attacking.parquet")
+defending_df = pd.read_parquet(r"DataSet Project/ucl-matches-dataset-02/parquet/defending.parquet")
+attempts_df = pd.read_parquet(r"DataSet Project/ucl-matches-dataset-02/parquet/attempts.parquet")
+goalkepping_df = pd.read_parquet(r"DataSet Project/ucl-matches-dataset-02/parquet/goalkeeping.parquet")
+goals_df = pd.read_parquet(r"DataSet Project/ucl-matches-dataset-02/parquet/goals.parquet")
+distribution_df = pd.read_parquet(r"DataSet Project/ucl-matches-dataset-02/parquet/distributon.parquet")
+disciplinary_df = pd.read_parquet(r"DataSet Project/ucl-matches-dataset-02/parquet/disciplinary.parquet")
 
 keyStats_df['club'] = keyStats_df['club'].str.lower()
 attacking_df['club'] = attacking_df['club'].str.lower()
@@ -15,13 +16,15 @@ attempts_df['club'] = attempts_df['club'].str.lower()
 goalkepping_df['club'] = goalkepping_df['club'].str.lower()
 goals_df['club'] = goals_df['club'].str.lower()
 distribution_df['club'] = distribution_df['club'].str.lower()
+disciplinary_df['club'] = disciplinary_df['club'].str.lower()
 
 jogadores_ataque_df = pd.merge(keyStats_df, attacking_df, on=['player_name', 'club'], how='left', suffixes=('_keyStats', '_attacking'))
 jogadores_defesa_df = pd.merge(jogadores_ataque_df, defending_df, on=['player_name', 'club'], how='left', suffixes=('_ataque', '_defesa'))
 jogadores_attempts_df = pd.merge(jogadores_defesa_df, attempts_df, on=['player_name', 'club'], how='left', suffixes=('_defesa', '_tentativas'))
 jogadores_goalkepping_df = pd.merge(jogadores_attempts_df, goalkepping_df, on=['player_name', 'club'], how='left', suffixes=('_tentativas', '_goalkepping'))
 jogadores_goals_df = pd.merge(jogadores_goalkepping_df, goals_df, on=['player_name', 'club'], how='left', suffixes=('_goalkepping', '_gols'))
-time_completo_df = pd.merge(jogadores_goals_df, distribution_df, on=['player_name', 'club'], how='left', suffixes=('_gols', '_distribuicao'))
+jogadores_distribution_df = pd.merge(jogadores_goals_df, distribution_df, on=['player_name', 'club'], how='left', suffixes=('_gols', '_distribuicao'))
+time_completo_df = pd.merge(jogadores_distribution_df, disciplinary_df, on=['player_name', 'club'], how='left', suffixes=('_distribuicao', '_disciplina'))
 
 club_id_map = {
     'man. city': 281,
