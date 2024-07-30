@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
 import numpy as np
+import plotly.graph_objs as go
 
 def load_data(file_path):
     return pd.read_parquet(file_path)
@@ -13,56 +13,56 @@ def get_player_data(df, player_name):
     return df[df['player_name'] == player_name]
 
 def calculate_attributes(df):
-    # Calcular min_per_goal
     df['min_per_goal'] = df.apply(
         lambda row: row['minutes_played'] / row['goals_goalkepping'] if row['goals_goalkepping'] > 0 else np.nan,
         axis=1
     )
     return df
 
-def normalize_attributes(player, attributes):
-    normalized_values = {}
-    for attr in attributes:
-        if pd.notna(player[attr]):
-            max_value = player[attr]
-            normalized_values[attr] = player[attr] / max_value if max_value else 0
-        else:
-            normalized_values[attr] = 0
-    return normalized_values
+def convert_minutes_to_hours(df, attribute):
+    df[attribute] = df[attribute] / 60
+    return df
 
-def plot_player_comparison(player1, player2, attributes, player1_name, player2_name):
-    labels = [attr for attr in attributes if not pd.isna(player1[attr]) and not pd.isna(player2[attr])]
-    values1 = [player1[attr] for attr in attributes if attr in labels]
-    values2 = [player2[attr] for attr in attributes if attr in labels]
+def plot_player_comparison(player1, player2, attributes, player1_name, player2_name, attribute_labels):
+    valid_attributes = [attr for attr in attributes if not pd.isna(player1[attr]) and not pd.isna(player2[attr])]
+    labels = [attribute_labels[attr] for attr in valid_attributes]
+    values1 = [player1[attr] for attr in valid_attributes]
+    values2 = [player2[attr] for attr in valid_attributes]
 
     if not labels: 
         st.write("Não há atributos válidos para comparação.")
         return
 
-    x = np.arange(len(labels))  
-    width = 0.35  
+    # Dividir minutos jogados por 60 para converter em horas jogadas
+    if 'minutes_played' in valid_attributes:
+        index = valid_attributes.index('minutes_played')
+        values1[index] /= 60
+        values2[index] /= 60
+        labels[index] = 'Horas jogadas'
 
-    fig, ax = plt.subplots(figsize=(12, 6))
-    bars1 = ax.bar(x - width/2, values1, width, label=player1_name)
-    bars2 = ax.bar(x + width/2, values2, width, label=player2_name)
+    fig = go.Figure(data=[
+        go.Bar(name=player1_name, x=labels, y=values1),
+        go.Bar(name=player2_name, x=labels, y=values2)
+    ])
 
-  
-    ax.set_xlabel('Atributos')
-    ax.set_ylabel('Valores')
-    ax.set_title('Comparação de Atributos entre Jogadores')
-    ax.set_xticks(x)
-    ax.set_xticklabels(labels, rotation=45, ha='right')
-    ax.legend()
+    fig.update_layout(
+        title='Comparação de Atributos entre Jogadores',
+        xaxis_title='Atributos',
+        yaxis_title='Valores',
+        barmode='group'
+    )
 
-    for bar in bars1:
-        yval = bar.get_height()
-        ax.text(bar.get_x() + bar.get_width()/2, yval, round(yval, 2), va='bottom')  # va: vertical alignment
-    for bar in bars2:
-        yval = bar.get_height()
-        ax.text(bar.get_x() + bar.get_width()/2, yval, round(yval, 2), va='bottom')
+    st.plotly_chart(fig)
 
-    st.pyplot(fig)
-
+attribute_labels = {
+    'match_played_keyStats': 'Partidas jogadas',
+    'goals_goalkepping': 'Quantidade de goals',
+    'assists_keyStats': 'Assistências',
+    'min_per_goal': 'Goals por minuto',
+    'minutes_played': 'Minutos jogados',
+    'saved': 'Defesas',
+    'conceded': 'Gols sofridos'
+}
 
 time_completo_df = load_data('DataSet Project/merge-data-by-clubs/merge-time-completo.parquet')
 
@@ -105,13 +105,10 @@ club_data = {
 
 st.title('Comparação de Jogadores')
 
-
 club1 = st.selectbox('Selecione o primeiro time', list(club_data.keys()), index=0)
 club2 = st.selectbox('Selecione o segundo time', list(club_data.keys()), index=1)
 
-
 position_filter = st.selectbox('Selecione a posição dos jogadores', ['Todos', 'Forward', 'Midfielder', 'Defender', 'Goalkeeper'])
-
 
 def filter_players_by_position(df, position):
     if position == 'Todos':
@@ -138,6 +135,6 @@ if not player1_data.empty and not player2_data.empty:
     elif position == 'Goalkeeper':
         attributes = ['minutes_played', 'saved', 'conceded', 'match_played_keyStats']
     
-    plot_player_comparison(player1, player2, attributes, player1_name, player2_name)
+    plot_player_comparison(player1, player2, attributes, player1_name, player2_name, attribute_labels)
 else:
-    st.write("Unable to find selected players.")
+    st.write("Não foi possível encontrar os jogadores selecionados.")
