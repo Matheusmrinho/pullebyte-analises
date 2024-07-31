@@ -3,7 +3,6 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.ticker import FormatStrFormatter
-import plotly.graph_objects as go
 import plotly.express as px
 
 
@@ -73,45 +72,55 @@ def creating_domestic_dataset(country_name, verbose = False):
         
     return g_
 competitions[competitions.country_id != -1].groupby(by = 'country_name').name.count()
-
-def clubs_valuation(country_name, verbose = False):
-    cid_, cname_, s_, t_, prev_, postv_, g_, w_, d_, l_ = [],[],[],[],[],[],[],[],[],[]
-    local_games = creating_domestic_dataset(country_name, verbose = verbose)
+@st.cache_data
+def clubs_valuation(country_name, verbose=False):
+    data = {
+        'club_id': [],
+        'club_name': [],
+        'season': [],
+        'no_of_players': [],
+        'games': [],
+        'win': [],
+        'draw': [],
+        'loss': [],
+        'pre_market_value': [],
+        'post_market_value': []
+    }
+    local_games = creating_domestic_dataset(country_name, verbose=verbose)
     club_idx = list_of_club_ids(local_games)
     seasons = sorted(local_games.season.value_counts().index.to_list())
+    
+    grouped_games = local_games.groupby(['club_id', 'season'])
+    
     for season in seasons:
-        if verbose:
-            print(season)
         for club_id in club_idx:
-            cid_.append(club_id)
-            cname_.append(clubs[clubs.club_id == club_id].name.values[0])
-            if verbose:
-                print(cname_[-1], end = '; ')
-            s_.append(season)
-            gidx = local_games[((local_games.home_club_id == club_id) | (local_games.away_club_id == club_id)) & (local_games.season == season)].game_id.values
-            g_.append(len(gidx))
-            w_.append(local_games[(local_games.season == season) & 
-                      ((local_games.home_club_id == club_id) & (local_games.home_club_goals > local_games.away_club_goals) | 
-                       ((local_games.away_club_id == club_id) & (local_games.home_club_goals < local_games.away_club_goals)))].game_id.count())
-            d_.append(local_games[(local_games.season == season) & 
-                      ((local_games.home_club_id == club_id) & (local_games.home_club_goals == local_games.away_club_goals) | 
-                       ((local_games.away_club_id == club_id) & (local_games.home_club_goals == local_games.away_club_goals)))].game_id.count())
-            l_.append(local_games[(local_games.season == season) & 
-                     ((local_games.home_club_id == club_id) & (local_games.home_club_goals < local_games.away_club_goals) | 
-                      ((local_games.away_club_id == club_id) & (local_games.home_club_goals > local_games.away_club_goals)))].game_id.count())
+            data['club_id'].append(club_id)
+            data['club_name'].append(clubs[clubs.club_id == club_id].name.values[0])
+            data['season'].append(season)
+            club_season_games = grouped_games.get_group((club_id, season))
+            gidx = club_season_games.game_id.values
+            data['games'].append(len(gidx))
+            
+            # Calcular vitórias, empates e derrotas
+            data['win'].append(club_season_games[((club_season_games.home_club_id == club_id) & (club_season_games.home_club_goals > club_season_games.away_club_goals)) | 
+                                                 ((club_season_games.away_club_id == club_id) & (club_season_games.home_club_goals < club_season_games.away_club_goals))].shape[0])
+            data['draw'].append(club_season_games[(club_season_games.home_club_goals == club_season_games.away_club_goals)].shape[0])
+            data['loss'].append(club_season_games[((club_season_games.home_club_id == club_id) & (club_season_games.home_club_goals < club_season_games.away_club_goals)) | 
+                                                  ((club_season_games.away_club_id == club_id) & (club_season_games.home_club_goals > club_season_games.away_club_goals))].shape[0])
+        
             if appearances[(appearances.game_id.isin(gidx)) & (appearances.player_club_id == club_id)].shape[0] > 0:
                 squad_stats = get_squad_stats(local_games, club_id, season)
-                t_.append(squad_stats['post_market_value'].count())
-                prev_.append(squad_stats['pre_market_value'].sum())
-                postv_.append(squad_stats['post_market_value'].sum())
+                data['no_of_players'].append(squad_stats['post_market_value'].count())
+                data['pre_market_value'].append(squad_stats['pre_market_value'].sum())
+                data['post_market_value'].append(squad_stats['post_market_value'].sum())
             else:
-                t_.append(np.nan)
-                prev_.append(np.nan)
-                postv_.append(np.nan)
-        if verbose:
-            print()
+                data['no_of_players'].append(np.nan)
+                data['pre_market_value'].append(np.nan)
+                data['post_market_value'].append(np.nan)
+    
     print('Values calculation is finished')
-    return pd.DataFrame({'club_id' : cid_, 'club_name' : cname_, 'season' : s_, 'no_of_players' : t_, 'games' : g_, 'win' :w_,  'draw' : d_, 'loss' :l_, 'pre_market_value' : prev_, 'post_market_value' : postv_})
+    return pd.DataFrame(data)
+@st.cache_data
 def get_squad_stats(local_games, club_id, season):
     player_stat_cols = ['yellow_cards', 'red_cards', 'goals', 'assists', 'minutes_played']
     season_start_date  = min(local_games[(local_games.away_club_id == club_id) & (local_games.season == season)].date.min(), local_games[(local_games.home_club_id == club_id) & (local_games.season == season)].date.min())
@@ -142,30 +151,3 @@ def get_squad_stats(local_games, club_id, season):
         
     col_order = ['club_id', 'club_name',  'season', 'season_start_date', 'season_finish_date', 'player_id', 'player_name', 'games', 'minutes_played', 'yellow_cards', 'red_cards', 'goals', 'assists', 'pre_market_value', 'post_market_value']
     return pd.concat([player_stats_, pd.DataFrame({'player_id' : player_idx, 'pre_market_value' : pre_value, 'post_market_value' : post_value}).set_index('player_id')], axis = 1).reset_index()[col_order]
-
-local_games_ES = creating_domestic_dataset('Spain', verbose = True)
-get_squad_stats(local_games_ES, 418, 2022)
-clubs[clubs.name.str.contains('Real Madrid')]
-club_values_ES = clubs_valuation('Spain', verbose = True)
-club_values_ES['points'] = 2 * club_values_ES.win + club_values_ES.draw
-club_values_ES['points_percent'] = club_values_ES.points / (2 * club_values_ES.games)
-
-pivot_table = pd.pivot_table(data=club_values_ES, index='club_name', columns='season', values='points_percent')
-
-# Normalizar os valores para a escala de cores e substituir NaN por 0
-norm_values = pivot_table.apply(lambda x: (x - np.min(x)) / (np.max(x) - np.min(x)), axis=1).fillna(0)
-
-fig = px.imshow(norm_values, 
-                labels=dict(x="Season", y="Club Name", color="Points Percent"),
-                x=pivot_table.columns,
-                y=pivot_table.index,
-                color_continuous_scale='Blues')
-
-fig.update_layout(
-    title="Club Performance by Season",
-    xaxis_title="Season",
-    yaxis_title="Club Name",
-    coloraxis_colorbar=dict(title="Points Percent")
-)
-
-st.plotly_chart(fig)
