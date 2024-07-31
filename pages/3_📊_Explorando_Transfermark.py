@@ -7,14 +7,13 @@ def load_data(file_path):
 
 def filter_data(data_frame, filter_by, item_filtro):
     return data_frame[data_frame[filter_by] == item_filtro]
- 
 
 # Carregar os dados
 games_df = load_data(r'DataSet Project/football-transfermarkt-dataset-01/parquet/games.parquet')
 # games_df = filter_data(games_df, 'season', '2021')
 games_df = filter_data(games_df, 'competition_id', 'CL')
-# game_events_df = load_data(r'DataSet Project/football-transfermarkt-dataset-01/parquet/game_events.parquet')
-# players_df = load_data(r'DataSet Project/football-transfermarkt-dataset-01/parquet/players.parquet')
+game_events_df = load_data(r'DataSet Project/football-transfermarkt-dataset-01/parquet/game_events.parquet')
+players_df = load_data(r'DataSet Project/football-transfermarkt-dataset-01/parquet/players.parquet')
 funcao = lambda x,: [filter_data(games_df, 'home_club_id', x), filter_data(games_df, 'away_club_id', x)]
 
 
@@ -30,10 +29,9 @@ games_by_clubs = {
 }
 
 
-# st.dataframe(games_by_clubs)
-# for i in games_by_clubs.keys():
-#      for j in range(0,2):
-#          games_by_clubs[i][j] = games_by_clubs[i][j].merge(game_events_df, on='game_id').merge(players_df, on='player_id')
+st.dataframe(games_by_clubs)
+for i in games_by_clubs.keys():
+     for j in range(0,2):
+         games_by_clubs[i][j] = games_by_clubs[i][j].merge(game_events_df, on='game_id').merge(players_df, on='player_id')
 
-# st.dataframe(games_by_clubs['Chelsea'][0])
-games_df = filter_data(games_df,'season',2021)
+st.dataframe(games_by_clubs['Chelsea'][0])
