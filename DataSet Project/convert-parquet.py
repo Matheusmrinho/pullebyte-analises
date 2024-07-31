@@ -6,12 +6,6 @@ def convert_csv_to_parquet(input_file_path, output_file_path, drop_option):
     # Read CSV file into a Pandas DataFrame
     df = pd.read_csv(input_file_path)
 
-    # Remove rows or columns with NaN fields based on the drop_option argument
-    if drop_option == 'row':
-        df = df.dropna()
-    elif drop_option == 'column':
-        df = df.dropna(axis=1)
-
     # Convert Pandas DataFrame to PyArrow Table
     table = pa.Table.from_pandas(df)
 
@@ -27,8 +21,8 @@ def convert_csv_to_parquet(input_file_path, output_file_path, drop_option):
     # Print the DataFrame
     print(df.head(100))
 
-input_file_path = 'DataSet Project/ucl-matches-dataset-02/key_stats.csv'
-output_file_path = 'DataSet Project/ucl-matches-dataset-02/parquet/key_stats.parquet'
+input_file_path = 'DataSet Project/Transfermarkt/transfers.csv'
+output_file_path = 'DataSet Project/football-transfermarkt-dataset-01/parquet/transfers.parquet'
 drop_option = 'column'  # options: 'row' or 'column'
 
 convert_csv_to_parquet(input_file_path, output_file_path, drop_option)
