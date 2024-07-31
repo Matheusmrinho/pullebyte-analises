@@ -21,6 +21,7 @@ st.set_page_config(
         'About': "Analise realizada da champions league com base nos datasets disponiveis no kaggle referente as temporadas <= 2022"
     }
 )
+@st.cache_data
 def player_market_value_plot(player_name):
     pid = players[players.name == player_name].player_id.values[0]
     ax = player_valuations[player_valuations.player_id == pid].plot.line( x = 'date', y = 'market_value_in_eur', figsize = (10,4), title = player_name);
@@ -40,7 +41,7 @@ def player_market_value_plot(player_name):
 
     ax.set_xlabel(''); ax.set_ylabel('')
     ax.yaxis.set_major_formatter(FormatStrFormatter('%.0f'))
-
+@st.cache_data
 def list_of_club_names(local_games):
     club_names = set()
     for idx, row in local_games.iterrows():
@@ -56,7 +57,7 @@ def list_of_club_ids(local_games):
     club_names.discard(np.nan)
     return list(club_names)
 
-    
+@st.cache_data
 def creating_domestic_dataset(country_name, verbose = False):
     '''
     return dataset contatining all games in all competitions for specific country
@@ -169,6 +170,8 @@ fig.update_layout(
         xaxis_title="Temporada",
         yaxis_title="Nome do Clubes",
         coloraxis_colorbar=dict(title="Pontos Percentuais"),
+        width=1000,
+        height=500
     )    
 st.plotly_chart(fig)
     # Calcular a diferença de valor
@@ -186,7 +189,12 @@ values_ES = pd.pivot_table(data=club_values_ES, index='club_name', columns='seas
 value_diff_data = values_ES[selected_clubs].loc['value_diff'].reset_index()
 
 # Plotar a diferença de valor usando Plotly
-fig1 = px.line(value_diff_data, x='season', y=selected_clubs, markers=True, labels={'value': 'Diferença de Valores'}, title='Diferença de valor dos clubes por temporada')
+fig1 = px.line(value_diff_data, x='season', y=selected_clubs, markers=True, 
+               labels={'value': 'Diferença de Valores'}, title='Diferença de valor dos clubes por temporada', 
+               line_shape='spline',
+               color_discrete_sequence=px.colors.qualitative.Set2,
+               width=1000,
+               height=500)
 
 # Exibir o gráfico
 st.plotly_chart(fig1)

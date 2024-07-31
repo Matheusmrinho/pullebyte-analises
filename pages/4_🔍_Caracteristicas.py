@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt# parte gráfica
 import seaborn as sns # parte gráfica
+import plotly.express as px
 
 def header():
     st.title("Características da base de dados 🔍")
@@ -24,7 +25,7 @@ def data_types(df):
     with elemento_1:
         plt.figure(figsize=(12,4))
  
-        dataset_tipos.plot(kind='bar',color='red')
+        dataset_tipos.plot(kind='bar',color='#66c3a4')
         # plt.
         plt.title("Distribuição dos tipos de dados")
         plt.xlabel("Tipos de dados")
@@ -56,8 +57,7 @@ def summary(df):
             IQR = (dataset_info[escolha_status]['75%']) - (dataset_info[escolha_status]['25%'])
             print(IQR)
         with elemento_2:
-            st.write("teste")
-
+            st.dataframe(df[escolha_status].head(10), width=1000)
     
     
 

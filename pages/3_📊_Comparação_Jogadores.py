@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.graph_objs as go
+import plotly.express as px
 
 def load_data(file_path):
     return pd.read_parquet(file_path)
@@ -49,7 +50,9 @@ def plot_player_comparison(player1, player2, attributes, player1_name, player2_n
         title='Comparação de Atributos entre Jogadores',
         xaxis_title='Atributos',
         yaxis_title='Valores',
-        barmode='group'
+        barmode='group',
+        width=1000,
+        height=500
     )
 
     st.plotly_chart(fig)

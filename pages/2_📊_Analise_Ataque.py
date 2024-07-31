@@ -3,6 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from mplsoccer.pitch import Pitch
 import seaborn as sns
+import plotly.express as px
 
 # Função para carregar dados
 def load_data(file_path):
@@ -188,13 +189,16 @@ tipo_chute_labels = {
 }
 clubs_barplot_df['Tipo de Chute'] = clubs_barplot_df['Tipo de Chute'].map(tipo_chute_labels)
 
-sns.barplot(data=clubs_barplot_df, x='Tipo de Chute', y='Quantidade', hue='club', ax=ax, palette='Set2')
-ax.set_title('Comparação de Chutes a Gol')
-ax.set_ylabel('Quantidade')
-ax.set_xlabel('Tipo de Chute')
-sns.despine(trim=True)
-
-st.pyplot(fig)
+fig = px.bar(clubs_barplot_df, x='Tipo de Chute', y='Quantidade', color='club', barmode='group', 
+             color_discrete_sequence=px.colors.qualitative.Set2)
+fig.update_layout(
+    title='Comparação de Chutes a Gol',
+    xaxis_title='Tipo de Chute',
+    yaxis_title='Quantidade',
+    width=1000,
+    height=500
+)
+st.plotly_chart(fig)
 
 #==============================================================================#
 
@@ -235,16 +239,14 @@ if times_selecionados:
     comparison_melted['Tipo'] = comparison_melted['Tipo'].map(tipo_labels)
 
     # Plotando o gráfico de comparação entre goleiros
-    plt.figure(figsize=(16, 10))
-    sns.barplot(data=comparison_melted, x='player_club', y='Quantidade', hue='Tipo', palette='Set2')
-    
-    plt.xticks(rotation=0, ha='center')
-    plt.title('Comparação de Defesas e Gols Sofridos por Goleiro')
-    plt.xlabel('Nome do Goleiro (Clube)')
-    plt.ylabel('Quantidade')
-    sns.despine(trim=True)
-    
-    # Mostrar o gráfico no Streamlit
-    st.pyplot(plt)
+    fig = px.bar(comparison_melted, x='player_club', y='Quantidade', color='Tipo', barmode='group', color_discrete_sequence=px.colors.qualitative.Set2)
+    fig.update_layout(
+        title='Comparação de Defesas e Gols Sofridos por Goleiro',
+        xaxis_title='Nome do Goleiro (Clube)',
+        yaxis_title='Quantidade',
+        width=1000,
+        height=500
+    )
+    st.plotly_chart(fig)
 else:
     st.markdown("**Selecione pelo menos um time para visualização.**")
