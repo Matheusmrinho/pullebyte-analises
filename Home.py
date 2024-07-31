@@ -42,7 +42,7 @@ import seaborn as sns
 pd.set_option('display.max_columns', None)
 pd.set_option('display.max_rows', None)
 pd.options.display.float_format = '{:.2f}'.format
-df_original = pd.read_parquet(r"DataSet Project/merge_by_clubs/merge_by_clubs.parquet")
+df_original = pd.read_parquet(r"DataSet Project/merge-data-by-clubs/merge-data-by-clubs.parquet")
 df_original.head()
 df_original.shape
 df_original.info()

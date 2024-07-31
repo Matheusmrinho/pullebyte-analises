@@ -54,4 +54,5 @@ for i in games_by_clubs.keys():
     for j in range(0,2):
         games_by_clubs[i][j] = games_by_clubs[i][j].merge(game_events_df, on='game_id').merge(players_df, on='player_id')
 
-# st.dataframe(games_by_clubs['Chelsea'][0])
+st.dataframe(games_by_clubs['Chelsea'][0])
+
