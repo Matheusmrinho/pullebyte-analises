@@ -20,7 +20,7 @@ def build_header():
 #     return data
 
 def  lista_parquet():
-    diretorio = "DataSet Project/ucl-matches-dataset-02/parquet/"
+    diretorio = "DataSet Project/football-transfermarkt-dataset-01/parquet/"
     return [i for i in os.listdir(diretorio) if i.endswith('.parquet')]
 
 def leitura_parquet(arquivo):
@@ -41,7 +41,7 @@ def build_body():
     # data = load_data()
     st.subheader("Selecione o dataset:")
     col1, col2 = st.columns([.3,.7])
-    caminho = "DataSet Project/ucl-matches-dataset-02/parquet/"
+    caminho = "DataSet Project/football-transfermarkt-dataset-01/parquet/"
     arquivo = col1.selectbox("\n",lista_parquet(),label_visibility='collapsed',key='dataset')
     caminho += arquivo
     botao_placeholder = col2.empty()
@@ -59,8 +59,7 @@ def mostrar_profile():
     st.write(f'Dataset: <i>{nome_dataframe}</i>', unsafe_allow_html=True)
     report_file = open(f'reports/{nome_dataframe}.html', 'r', encoding='utf-8')
     source_code = report_file.read() 
-    components.html(source_code, height=400, scrolling=True)
-
+    components.html(source_code, height=600, scrolling=True)
 
 
 def main():
