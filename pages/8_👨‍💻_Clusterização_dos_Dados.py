@@ -14,8 +14,10 @@ def main():
     st.subheader("🎲 Dados Utilizados na Clusterização")
     st.write("Conjunto de dados utilizados na clusterização:")
     st.dataframe(cluster_data)
+    st.dataframe(apereence)
     
 cluster_data = load_data(r"DataSet Project/transfermarkrt-dados-clean/merged_data/merge_club_games_events_dummy.parquet")
         
+apereence = load_data(r"DataSet Project/transfermarkrt-dados-clean/appearances.parquet")
 if __name__ == "__main__":
     main()
