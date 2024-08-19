@@ -5,15 +5,15 @@ import streamlit as st
 @st.cache_data
 def load_data():
     players_valuations_df = pd.read_parquet(
-        "DataSet Project/football-transfermarkt-dataset-01/dados_nomalizados/player_valuations_nor.parquet",
+        "DataSet Project/transfermarkrt-dados-clean/player_valuations.parquet",
         columns=['player_id', 'current_club_id', 'market_value_in_eur']
     )
     games_df = pd.read_parquet(
-        "DataSet Project/football-transfermarkt-dataset-01/dados_nomalizados/games.parquet_nor.parquet",
+        "DataSet Project/transfermarkrt-dados-clean/games.parquet",
         columns=['home_club_id', 'competition_id', 'season', 'home_club_name']
     )
     players_df = pd.read_parquet(
-        "DataSet Project/football-transfermarkt-dataset-01/dados_nomalizados/players_nor.parquet",
+        "DataSet Project/transfermarkrt-dados-clean/players.parquet",
         columns=['player_id', 'first_name', 'last_name']
     )
     return players_valuations_df, games_df, players_df
