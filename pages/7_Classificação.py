@@ -133,3 +133,57 @@ for model_name, model in models.items():
         'Accuracy': accuracy_score(y_test, y_pred),
         'Classification Report': classification_report(y_test, y_pred, output_dict=True)
     }
+
+st.title("👨‍💻 Classificação dos Dados")
+st.subheader("Resultados dos Modelos de Classificação")
+for model_name, result in results.items():
+    col1, col2 = st.columns([4, 4])
+    
+    with col1:
+        st.subheader(model_name)
+        st.metric(label="Recall Médio (Validação Cruzada)", value=f"{result['Cross-Validation Recall Mean']:.2f}")
+        st.metric(label="Acurácia", value=f"{result['Accuracy']:.2f}")
+    
+    with col2:
+        st.subheader('Relatório de Classificação')
+        report_df = pd.DataFrame(result['Classification Report']).transpose()
+        st.table(report_df)
+
+# Preparar dados para o gráfico de barras horizontais
+recalls = [result['Cross-Validation Recall Mean'] for result in results.values()]
+accuracies = [result['Accuracy'] for result in results.values()]
+model_names = list(results.keys())
+
+# Criar DataFrame para o gráfico
+df_chart = pd.DataFrame({
+    'Modelo': model_names,
+    'Recall Médio': recalls,
+    'Acurácia': accuracies
+})
+
+# Gráfico de barras horizontais para Recall Médio
+fig_recall = px.bar(df_chart, x='Recall Médio', y='Modelo', orientation='h', title='Comparação de Recall Médio', color='Modelo')
+fig_recall.update_layout(
+    xaxis_title='Recall Médio',
+    yaxis_title='Modelo',
+    title_font=dict(size=20, family='Arial, sans-serif', color='white'),
+    xaxis=dict(title_font=dict(size=16, family='Arial, sans-serif', color='white')),
+    yaxis=dict(title_font=dict(size=16, family='Arial, sans-serif', color='white')),
+    legend_title=dict(font=dict(size=14, family='Arial, sans-serif', color='white'))
+)
+
+# Gráfico de barras horizontais para Acurácia
+fig_accuracy = px.bar(df_chart, x='Acurácia', y='Modelo', orientation='h', title='Comparação de Acurácia', color='Modelo')
+fig_accuracy.update_layout(
+    xaxis_title='Acurácia',
+    yaxis_title='Modelo',
+    title_font=dict(size=20, family='Arial, sans-serif', color='white'),
+    xaxis=dict(title_font=dict(size=16, family='Arial, sans-serif', color='white')),
+    yaxis=dict(title_font=dict(size=16, family='Arial, sans-serif', color='white')),
+    legend_title=dict(font=dict(size=14, family='Arial, sans-serif', color='white'))
+)
+
+# Exibir gráficos no Streamlit
+st.subheader('Comparação de Métricas')
+st.plotly_chart(fig_recall, use_container_width=True)
+st.plotly_chart(fig_accuracy, use_container_width=True)
