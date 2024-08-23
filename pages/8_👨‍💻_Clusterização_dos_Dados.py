@@ -30,7 +30,7 @@ def main():
     # Exibindo o conjunto de dados
     cluster_data = load_data(r"DataSet Project/clustering/data/merge_filtred_default.parquet")
     st.write("### Conjunto de Dados Utilizado:")
-    st.dataframe(cluster_data.head())
+    st.dataframe(cluster_data)
 
     # Algoritmo utilizado e tipos de clusterização
     st.write("### Algoritmo Utilizado")
@@ -46,8 +46,14 @@ def main():
     st.write("Utilizamos o método do cotovelo para determinar o número ideal de clusters.")
     dados_clusterizacao = st.selectbox("Selecione o tipo dado utilizado na clusterizacao", ["Selecione", "Normalizado", "Padronizado"])
     
+    df = None
+    
     if dados_clusterizacao in ["Normalizado", "Padronizado"]:
-        metodo_cotovelo(dados_clusterizacao)
+        if dados_clusterizacao == "Normalizado":
+            df = load_data(r"DataSet Project/clustering/data/merge_normalized_dummy.parquet")
+        elif dados_clusterizacao == "Padronizado":
+            df = load_data(r"DataSet Project/clustering/data/merge_standardized_dummy.parquet")
+        metodo_cotovelo(df)
     
         
     qtd_clusters = st.number_input("Após analise, quantos clusters você quer separar?", min_value=2, max_value=14, value=3)
@@ -56,23 +62,60 @@ def main():
     st.write("Após a identificação do número de clusters ideal, aplicamos o algoritmo KMeans para clusterizar os dados.")
     st.write("Abaixo, apresentamos os dados clusterizados: ")
     
-    if dados_clusterizacao in ["Normalizado", "Padronizado"] and qtd_clusters != 0:
-        cluster_data_clusterizado = get_cluster_data(dados_clusterizacao, qtd_clusters)
-        st.dataframe(cluster_data_clusterizado.head())
+    if dados_clusterizacao:
+        cluster_data_clusterizado = get_cluster_data(df, qtd_clusters)
+        st.dataframe(cluster_data_clusterizado)
         plot_bar_charts(cluster_data_clusterizado, 'cluster', ['yellow_cards', 'red_cards', 'goals', 'suffered_goals', 'assists'])
-        
+            
         select_formations = st.multiselect("Selecione as formações táticas para visualizar a quantidade de formações táticas por cluster", cluster_data['club_formation'].unique())
         formacoes_taticas(cluster_data_clusterizado, select_formations, qtd_clusters)
-        
+            
         select_treemp = st.selectbox("Selecione a visualização dos clubes por cluster", cluster_data_clusterizado.columns, index=0)
-        treemap(cluster_data_clusterizado, select_treemp, 'Agrupamento de dados por cluster')
+        treemap(cluster_data_clusterizado, 'Agrupamento de dados por cluster')
 
-def treemap(df, column, title):
+# def treemap(df, column, title):
+#     for cluster in sorted(df['cluster'].unique()):
+#         filtered_df = df[df['cluster'] == cluster]
+#         fig = px.treemap(filtered_df, path=[column], title=f"Agrupamento - Cluster {cluster}", width=700, height=500)
+#         fig.update_layout(margin = dict(t=50, l=25, r=35, b=25))
+#         fig.update_traces(marker=dict(cornerradius=3))
+#         fig.data[0].insidetextfont = dict(size=12)
+#         fig.data[0].branchvalues = 'total'
+#         fig.data[0].textinfo = 'label+percent entry'
+#         fig.data[0].hovertemplate = '<b>%{label}</b><br>%{value}<br>%{percentParent}'
+#         st.plotly_chart(fig)
+def treemap(df, title):
+    # Cria uma coluna categorizada para as vitórias, empates e derrotas
+    df['result'] = df['is_win'].map({1: 'Vitórias', 0: 'Empates', -1: 'Derrotas'})
+    
+    # Define as cores para cada categoria
+    color_map = {
+        'Vitórias': 'green',
+        'Empates': 'gray',
+        'Derrotas': 'red'
+    }
+    
     for cluster in sorted(df['cluster'].unique()):
         filtered_df = df[df['cluster'] == cluster]
-        fig = px.treemap(filtered_df, path=[column], title=f"Agrupamento - Cluster {cluster}", width=700, height=500)
-        fig.update_layout(margin = dict(t=50, l=25, r=35, b=25))
+        
+        # Cria o treemap com o nível 1 relacionado aos resultados (Vitórias, Empates, Derrotas)
+        fig = px.treemap(
+            filtered_df, 
+            path=['result', 'club_name'], 
+            title=f"{title} - Cluster {cluster}", 
+            width=700, 
+            height=500,
+            color='result',  # Usa a coluna 'result' para definir as cores
+            color_discrete_map=color_map  # Aplica o mapa de cores definido
+        )
+        
+        fig.update_layout(margin=dict(t=50, l=25, r=35, b=25))
         fig.update_traces(marker=dict(cornerradius=3))
+        fig.data[0].insidetextfont = dict(size=12)
+        fig.data[0].branchvalues = 'total'
+        fig.data[0].textinfo = 'label+percent entry'
+        fig.data[0].hovertemplate = '<b>%{label}</b><br>%{value}<br>%{percentParent}'
+        
         st.plotly_chart(fig)
 
 @st.cache_data
@@ -150,15 +193,11 @@ def plot_bar_charts(data, cluster_column, columns_to_plot):
     
 @st.cache_data
 def metodo_cotovelo(dados_clusterizacao):
-    if dados_clusterizacao == "Normalizado":
-        data = load_data(r"DataSet Project/clustering/data/merge_normalized_dummy.parquet")
-    elif dados_clusterizacao == "Padronizado":
-        data = load_data(r"DataSet Project/clustering/data/merge_standardized_dummy.parquet")
     
     distortions = []
     n_clusters = list(range(2, 10))
     for n_clus in n_clusters:
-        distortions.append(KMeans(n_clusters=n_clus, max_iter=10_000, n_init=100, random_state=61658).fit(data).inertia_)
+        distortions.append(KMeans(n_clusters=n_clus, max_iter=10_000, n_init=100, random_state=61658).fit(dados_clusterizacao).inertia_)
 
     fig = go.Figure(data=go.Scatter(x=n_clusters, y=distortions))
     fig.update_layout(
@@ -171,14 +210,9 @@ def metodo_cotovelo(dados_clusterizacao):
 @st.cache_data
 def get_cluster_data(dados_clusterizacao, qtd_clusters):
     df_default = load_data(r"DataSet Project/clustering/data/merge_filtred_default.parquet")
-    df = None
-    if dados_clusterizacao == "Normalizado":
-        df = load_data(r"DataSet Project/clustering/data/merge_normalized_dummy.parquet")
-    elif dados_clusterizacao == "Padronizado":
-        df = load_data(r"DataSet Project/clustering/data/merge_standardized_dummy.parquet")
     
     km = KMeans(n_clusters=qtd_clusters, max_iter=10_000, n_init=100, random_state=42)
-    merged_default = km.fit_predict(df)
+    merged_default = km.fit_predict(dados_clusterizacao)
     df_default['cluster'] = merged_default
     
     return df_default
