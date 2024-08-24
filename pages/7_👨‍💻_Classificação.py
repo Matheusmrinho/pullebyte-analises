@@ -1,15 +1,19 @@
 import pandas as pd
 from sklearn.model_selection import train_test_split, cross_val_score, GridSearchCV
-from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import accuracy_score, classification_report
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.metrics import accuracy_score, classification_report, ConfusionMatrixDisplay, confusion_matrix
+import matplotlib.pyplot as plt
+from sklearn.impute import SimpleImputer
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.svm import SVC
 from sklearn.pipeline import Pipeline
-import streamlit as st
+from sklearn.compose import ColumnTransformer
+from imblearn.under_sampling import RandomUnderSampler
 import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
-@st.cache_data
+import streamlit as st
+
 def load_data():
     players = pd.read_parquet('DataSet Project/transfermarkrt-dados-clean/players.parquet')
     appearances = pd.read_parquet('DataSet Project/transfermarkrt-dados-clean/appearances.parquet')
