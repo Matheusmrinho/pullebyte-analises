@@ -3,7 +3,6 @@ import pandas as pd
 from sklearn.cluster import KMeans
 import plotly.graph_objects as go
 import plotly.express as px
-from sklearn.preprocessing import LabelEncoder
 
 @st.cache_data
 def load_data(file_path):
@@ -55,7 +54,6 @@ def categorize_formations(data):
     return data
 
 def main():
-   # Título e descrição principal
     st.title("👨‍💻 Clusterização dos Dados")
     st.write("Organizamos objetos semelhantes em grupos para identificar padrões e melhorar a tomada de decisões.")
     st.divider()
@@ -93,7 +91,6 @@ def main():
         
     st.write(df.to_html(index=False, escape=False), unsafe_allow_html=True)
 
-    # Método do Cotovelo
     st.header("🦾 Método do Cotovelo")
     st.write("Utilizamos o método do cotovelo para determinar o número ideal de clusters.")
     st.write("Aplicamos o algoritmo KMeans para agrupar as observações em clusters, com as variáveis categóricas dummyficadas.")
@@ -209,6 +206,8 @@ def distribution_by_cluster(data, team_names):
     
     st.plotly_chart(fig)
 
+
+# GRÁFICO DE FORMAÇÃO TATICA
 @st.cache_data
 def formacoes_taticas(data, qtd_clusters):
     if 'club_formation' not in data.columns:
@@ -253,6 +252,7 @@ def formacoes_taticas(data, qtd_clusters):
     st.plotly_chart(fig)
 
 @st.cache_data
+def cards_grafic(data, cluster_column, columns_to_plot):
 def cards_grafic(data, cluster_column, columns_to_plot):
     if cluster_column not in data.columns:
         st.error(f"A coluna '{cluster_column}' não existe no DataFrame.")
@@ -428,7 +428,6 @@ def plot_assists_boxplot(df):
     
 @st.cache_data
 def metodo_cotovelo(dados_clusterizacao):
-    
     distortions = []
     n_clusters = list(range(2, 10))
     for n_clus in n_clusters:
