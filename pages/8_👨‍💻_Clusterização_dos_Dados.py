@@ -253,7 +253,6 @@ def formacoes_taticas(data, qtd_clusters):
 
 @st.cache_data
 def cards_grafic(data, cluster_column, columns_to_plot):
-def cards_grafic(data, cluster_column, columns_to_plot):
     if cluster_column not in data.columns:
         st.error(f"A coluna '{cluster_column}' não existe no DataFrame.")
         return
