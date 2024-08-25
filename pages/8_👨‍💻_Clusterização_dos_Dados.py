@@ -15,35 +15,43 @@ def main():
     st.write("Organizamos objetos semelhantes em grupos para identificar padrões e melhorar a tomada de decisões.")
     st.divider()
 
-    # Subtítulo e lista dos dados selecionados
     st.subheader("🎲 Dados Selecionados")
-    st.write("""
-    - **club_name:** Nome do clube
-    - **club_formation:** Formação tática do clube
-    - **team_type:** Tipo de equipe (titular/reserva)
-    - **yellow_cards:** Cartões amarelos
-    - **red_cards:** Cartões vermelhos
-    - **goals:** Gols marcados
-    - **assists:** Assistências
-    """)
+        # Dados para a tabela
+        # Dados para a tabela
+    data = {
+            "Campo": [
+                "club_name", 
+                "club_formation", 
+                "team_type", 
+                "yellow_cards", 
+                "red_cards", 
+                "goals", 
+                "suffered_goals", 
+                "assists", 
+                "is_win"
+            ],
+            "Descrição": [
+                "Nome do clube", 
+                "Formação tática", 
+                "Tipo de equipe", 
+                "Cartões amarelos", 
+                "Cartões vermelhos", 
+                "Gols marcados", 
+                "Gols sofridos", 
+                "Assistências", 
+                "Vitória (1), Empate (0), Derrota (-1)"
+            ]
+        }
 
-    # Exibindo o conjunto de dados
-    cluster_data = load_data(r"DataSet Project/clustering/data/merge_filtred_default.parquet")
-    st.write("### Conjunto de Dados Utilizado:")
-    st.dataframe(cluster_data)
-
-    # Algoritmo utilizado e tipos de clusterização
-    st.write("### Algoritmo Utilizado")
-    st.write("Aplicamos o algoritmo KMeans para agrupar as observações em clusters, com as variáveis categóricas dummyficadas.")
-    st.write("Testamos dois tipos de clusterização:")
-    st.markdown("""
-    - **Normalização:** Clusterização com dados normalizados
-    - **Padronização:** Clusterização com dados padronizados
-    """)
+        # Criar DataFrame sem índice
+    df = pd.DataFrame(data)
+        
+    st.write(df.to_html(index=False, escape=False), unsafe_allow_html=True)
 
     # Método do Cotovelo
     st.header("🦾 Método do Cotovelo")
     st.write("Utilizamos o método do cotovelo para determinar o número ideal de clusters.")
+    st.write("Aplicamos o algoritmo KMeans para agrupar as observações em clusters, com as variáveis categóricas dummyficadas.")
     dados_clusterizacao = st.selectbox("Selecione o tipo dado utilizado na clusterizacao", ["Selecione", "Normalizado", "Padronizado"])
     
     df = None
@@ -54,6 +62,7 @@ def main():
         elif dados_clusterizacao == "Padronizado":
             df = load_data(r"DataSet Project/clustering/data/merge_standardized_dummy.parquet")
         metodo_cotovelo(df)
+
     
         
     qtd_clusters = st.number_input("Após analise, quantos clusters você quer separar?", min_value=2, max_value=14, value=3)
@@ -65,131 +74,147 @@ def main():
     if dados_clusterizacao:
         cluster_data_clusterizado = get_cluster_data(df, qtd_clusters)
         st.dataframe(cluster_data_clusterizado)
-        plot_bar_charts(cluster_data_clusterizado, 'cluster', ['yellow_cards', 'red_cards', 'goals', 'suffered_goals', 'assists'])
-            
-        select_formations = st.multiselect("Selecione as formações táticas para visualizar a quantidade de formações táticas por cluster", cluster_data['club_formation'].unique())
-        formacoes_taticas(cluster_data_clusterizado, select_formations, qtd_clusters)
-            
-        select_treemp = st.selectbox("Selecione a visualização dos clubes por cluster", cluster_data_clusterizado.columns, index=0)
-        treemap(cluster_data_clusterizado, 'Agrupamento de dados por cluster')
+        
+        st.subheader("📊 Comparativo | Gols Marcados X Sofridos")
+        
+        gols_marcados_levados(cluster_data_clusterizado)
+        
+        st.subheader("📊 Distribuição | Vitórias, Derrotas e Empates")
+        
+        cols = st.columns(qtd_clusters)
+        
+        with cols[0]:
+            treemap(cluster_data_clusterizado, 0, "Cluster 0")
+        with cols[1]:
+            treemap(cluster_data_clusterizado, 1, "Cluster 1")
+        with cols[2]:
+            treemap(cluster_data_clusterizado, 2, "Cluster 2")
+        
+        st.subheader("📊 Distribuição de Assistências por Cluster")
 
-# def treemap(df, column, title):
-#     for cluster in sorted(df['cluster'].unique()):
-#         filtered_df = df[df['cluster'] == cluster]
-#         fig = px.treemap(filtered_df, path=[column], title=f"Agrupamento - Cluster {cluster}", width=700, height=500)
-#         fig.update_layout(margin = dict(t=50, l=25, r=35, b=25))
-#         fig.update_traces(marker=dict(cornerradius=3))
-#         fig.data[0].insidetextfont = dict(size=12)
-#         fig.data[0].branchvalues = 'total'
-#         fig.data[0].textinfo = 'label+percent entry'
-#         fig.data[0].hovertemplate = '<b>%{label}</b><br>%{value}<br>%{percentParent}'
-#         st.plotly_chart(fig)
-def treemap(df, title):
+        plot_assists_boxplot(cluster_data_clusterizado)
+        
+        
+          
+@st.cache_data
+def gols_marcados_levados(data, cluster_column='cluster', columns_to_plot=['goals', 'suffered_goals']):
+    if cluster_column not in data.columns:
+        st.error(f"A coluna '{cluster_column}' não existe no DataFrame.")
+        return
+
+    fig = go.Figure()
+
+    color_map = {
+        'suffered_goals': '#E4003A',
+        'goals': '#40A578'
+    }
+    
+    # Adicionar uma barra para cada coluna em columns_to_plot
+    for column in columns_to_plot:
+        if column not in data.columns:
+            st.warning(f"A coluna '{column}' não existe no DataFrame.")
+            continue
+        cluster_means = data.groupby(cluster_column)[column].mean().reset_index()
+    
+        if column == 'suffered_goals':
+            column_label = 'Gols Sofridos'
+        elif column == 'goals':
+            column_label = 'Gols Marcados'
+        else:
+            column_label = column
+    
+        fig.add_trace(go.Bar(
+            x=cluster_means[cluster_column].astype(str),
+            y=cluster_means[column],
+            name=column_label,
+            marker_color=color_map.get(column, '#1f77b4'),  # Altera para a cor azul escura
+            text=cluster_means[column].round(2),  # Adiciona o texto com a média
+            textposition='outside'  # Posiciona o texto fora das barras
+        ))
+    
+    fig.update_layout(
+        barmode='group',  # Muda o modo para barras agrupadas
+        yaxis_title='Quantidade Média de Gols',
+        xaxis=dict(
+            tickmode='array',
+            tickvals=[str(i) for i in data[cluster_column].unique()],
+            ticktext=[f'Cluster {i}' for i in data[cluster_column].unique()]
+        ),
+        legend_title='Tipo de Gol',
+        template='simple_white',  # Opção de template para um visual limpo
+        margin=dict(
+            l=40,
+            r=30,
+            b=80,
+            t=30  # Modifiquei o valor do topo para reduzir o espaço reservado para o título
+        ),
+        plot_bgcolor='rgba(0,0,0,0)',  # Remove a borda branca do fundo do gráfico
+        paper_bgcolor='rgba(0,0,0,0)'  # Remove a borda branca do fundo do papel
+    )
+    
+    st.plotly_chart(fig)
+                  
+def treemap(df, cluster, title):
     # Cria uma coluna categorizada para as vitórias, empates e derrotas
     df['result'] = df['is_win'].map({1: 'Vitórias', 0: 'Empates', -1: 'Derrotas'})
     
     # Define as cores para cada categoria
     color_map = {
-        'Vitórias': 'green',
-        'Empates': 'gray',
-        'Derrotas': 'red'
+        'Vitórias': '#40A578',
+        'Empates': 'orange',
+        'Derrotas': '#E4003A'
     }
     
-    for cluster in sorted(df['cluster'].unique()):
-        filtered_df = df[df['cluster'] == cluster]
-        
-        # Cria o treemap com o nível 1 relacionado aos resultados (Vitórias, Empates, Derrotas)
-        fig = px.treemap(
-            filtered_df, 
-            path=['result', 'club_name'], 
-            title=f"{title} - Cluster {cluster}", 
-            width=700, 
-            height=500,
-            color='result',  # Usa a coluna 'result' para definir as cores
-            color_discrete_map=color_map  # Aplica o mapa de cores definido
-        )
-        
-        fig.update_layout(margin=dict(t=50, l=25, r=35, b=25))
-        fig.update_traces(marker=dict(cornerradius=3))
-        fig.data[0].insidetextfont = dict(size=12)
-        fig.data[0].branchvalues = 'total'
-        fig.data[0].textinfo = 'label+percent entry'
-        fig.data[0].hovertemplate = '<b>%{label}</b><br>%{value}<br>%{percentParent}'
-        
-        st.plotly_chart(fig)
-
-@st.cache_data
-def formacoes_taticas(data, formations, qtd_clusters):
-    # Verifica se a coluna 'club_formation' existe no DataFrame
-    if 'club_formation' not in data.columns:
-        st.error("A coluna 'club_formation' não existe no DataFrame.")
-        return
-
-    # Filtra os dados para as formações táticas selecionadas
-    filtered_data = data[data['club_formation'].isin(formations)]
-
-    # Verifica se há dados filtrados
-    if filtered_data.empty:
-        st.warning("Não há dados para as formações táticas selecionadas.")
-        return
-
-    # Conta a quantidade de formações táticas em cada cluster
-    formation_counts = filtered_data.groupby(['cluster', 'club_formation']).size().reset_index(name='count')
-
-    # Garante que todos os clusters estejam representados, mesmo os que não têm formações
-    all_clusters = pd.DataFrame({'cluster': range(qtd_clusters)})
-    all_formations = pd.DataFrame({'club_formation': formations})
-    all_combinations = all_clusters.merge(all_formations, how='cross')  # Combinação cruzada de clusters e formações
-    formation_counts = pd.merge(all_combinations, formation_counts, on=['cluster', 'club_formation'], how='left').fillna(0)
-
-    # Plota o gráfico de barras para todas as formações táticas, agrupadas por cluster
-    fig = px.bar(formation_counts, x='cluster', y='count', color='club_formation',
-                 labels={'cluster': 'Cluster', 'count': 'Count', 'club_formation': 'Club Formation'},
-                 title="Quantidade de Formações Táticas por Cluster",
-                 barmode='group',
-                 color_discrete_sequence=px.colors.qualitative.Pastel)  # Paleta de tons pastéis
-
+    filtered_df = df[df['cluster'] == cluster]
+    fig = px.treemap(
+        filtered_df, 
+        path=['result'],
+        width=220, 
+        height=400,
+        labels={'value': 'Quantidade'},
+        color='result',  # Usa a coluna 'result' para definir as cores
+        color_discrete_map=color_map  # Aplica o mapa de cores definido
+    )
+    
+    fig.update_layout(margin=dict(t=10, l=0, r=0, b=0))
+    fig.update_traces(marker=dict(cornerradius=3))
+    
+    fig.data[0].insidetextfont = dict(size=12, color='white')
+    fig.data[0].branchvalues = 'total'
+    fig.data[0].textinfo = 'label+percent entry'
+    fig.data[0].hovertemplate = '<b>%{label}</b><br>%{value}<br>%{percentParent}'
+    
+    # Renderiza o gráfico
     st.plotly_chart(fig)
     
-@st.cache_data
-def plot_bar_charts(data, cluster_column, columns_to_plot):
-    # Verifica se a coluna de clusters existe
-    if cluster_column not in data.columns:
-        st.error(f"A coluna '{cluster_column}' não existe no DataFrame.")
-        return
+    # Adiciona o título abaixo do gráfico
+    st.markdown(f"<h6 style='text-align: center; margin-top:-15px'>{title}</h6>", unsafe_allow_html=True)
+    
+def plot_assists_boxplot(df):
+    # Mapeamento das cores para cada cluster com cores sólidas e padrão
+    color_map = {
+        0: '#1f77b4',  # Azul padrão
+        1: '#ff7f0e',  # Laranja padrão
+        2: '#d62728'   # Vermelho padrão
+    }
+    
+    # Criando o box plot com Plotly
+    fig = px.box(df, x="cluster", y="assists", color="cluster",
+                 color_discrete_map=color_map,
+                 labels={"assists": "Assistências"},
+                 template="plotly_white")  # Tema claro
 
-    # Cria uma lista de cores baseada no número de clusters
-    unique_clusters = data[cluster_column].unique()
-    color_map = px.colors.qualitative.Pastel
+    # Customizando o layout do gráfico
+    fig.update_layout(
+        xaxis_title="Cluster",
+        yaxis_title="Quantidade de Assist.",
+        xaxis_title_font_size=16,
+        yaxis_title_font_size=16,
+        showlegend=True
+    )
 
-    for column in columns_to_plot:
-        if column not in data.columns:
-            st.warning(f"A coluna '{column}' não existe no DataFrame.")
-            continue
-
-        # Agrupa os dados por cluster e calcula a média da coluna
-        cluster_means = data.groupby(cluster_column)[column].mean().reset_index()
-
-        # Cria o gráfico de barras com cores diferentes para cada cluster
-        fig = go.Figure()
-
-        for i, cluster in enumerate(unique_clusters):
-            cluster_data = cluster_means[cluster_means[cluster_column] == cluster]
-            fig.add_trace(go.Bar(
-                x=cluster_data[cluster_column],
-                y=cluster_data[column],
-                name=f'Cluster {cluster}',
-                marker_color=color_map[i % len(color_map)]  # Aplica cores cíclicas da paleta
-            ))
-
-        fig.update_layout(
-            xaxis_title='Cluster',
-            yaxis_title=column,
-            title=f'Média de {column} por Cluster',
-            barmode='group'  # Exibe as barras lado a lado
-        )
-
-        st.plotly_chart(fig)
+    # Exibindo o gráfico no Streamlit
+    st.plotly_chart(fig)
     
 @st.cache_data
 def metodo_cotovelo(dados_clusterizacao):
