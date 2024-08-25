@@ -9,6 +9,51 @@ from sklearn.preprocessing import LabelEncoder
 def load_data(file_path):
     return pd.read_parquet(file_path)
 
+def categorize_formations(data):
+    offensive_formations = [
+    "4-3-3 attacking",
+    "4-3-1-2",
+    "3-4-3",
+    "3-5-2 attacking",
+    "3-1-4-2",
+    "3-4-3 diamond",
+    "4-4-2 diamond"
+]
+
+# Formações defensivas
+    defensive_formations = [
+        "4-3-3 defending",
+        "5-4-1",
+        "4-5-1 flat",
+        "4-1-4-1",
+        "3-3-3-1"
+]
+
+    # Formações equilibradas
+    balanced_formations = [
+        "4-4-2 double 6",
+        "3-5-2 flat",
+        "4-2-3-1",
+        "4-4-2",
+        "4-4-1-1",
+        "3-4-2-1",
+        "4-4-2 flat",
+        "3-5-2"
+]
+
+    def categorize(formation):
+        if any(off in formation for off in offensive_formations):
+            return "Ofensiva"
+        elif any(defn in formation for defn in defensive_formations):
+            return "Defensiva"
+        elif any(bal in formation for bal in balanced_formations):
+            return "Equilibrada"
+        else:
+            return "Outras"
+
+    data['club_formation'] = data['club_formation'].apply(categorize)
+    return data
+
 def main():
    # Título e descrição principal
     st.title("👨‍💻 Clusterização dos Dados")
@@ -65,37 +110,196 @@ def main():
 
     
         
-    qtd_clusters = st.number_input("Após analise, quantos clusters você quer separar?", min_value=2, max_value=14, value=3)
-    
-    st.header("🫧 Clusterização")
-    st.write("Após a identificação do número de clusters ideal, aplicamos o algoritmo KMeans para clusterizar os dados.")
-    st.write("Abaixo, apresentamos os dados clusterizados: ")
-    
-    if dados_clusterizacao:
-        cluster_data_clusterizado = get_cluster_data(df, qtd_clusters)
-        st.dataframe(cluster_data_clusterizado)
+        qtd_clusters = st.number_input("Após analise, quantos clusters você quer separar?", min_value=2, max_value=14, value=3)
         
-        st.subheader("📊 Comparativo | Gols Marcados X Sofridos")
+        st.header("🫧 Clusterização")
+        st.write("Após a identificação do número de clusters ideal, aplicamos o algoritmo KMeans para clusterizar os dados.")
+        st.write("Abaixo, apresentamos os dados clusterizados: ")
         
-        gols_marcados_levados(cluster_data_clusterizado)
-        
-        st.subheader("📊 Distribuição | Vitórias, Derrotas e Empates")
-        
-        cols = st.columns(qtd_clusters)
-        
-        with cols[0]:
-            treemap(cluster_data_clusterizado, 0, "Cluster 0")
-        with cols[1]:
-            treemap(cluster_data_clusterizado, 1, "Cluster 1")
-        with cols[2]:
-            treemap(cluster_data_clusterizado, 2, "Cluster 2")
-        
-        st.subheader("📊 Distribuição de Assistências por Cluster")
+        if dados_clusterizacao:
+            cluster_data_clusterizado = get_cluster_data(df, qtd_clusters)
+            cluster_data_clusterizado = categorize_formations(cluster_data_clusterizado)
+            st.dataframe(cluster_data_clusterizado)
+            
+            st.subheader("📊 Distribuição dos Jogos dos Times entre Clusters")
+            selected_teams = st.multiselect("Selecione os times para visualização", cluster_data_clusterizado['club_name'].unique(),default=['real madrid','bayern munich'])
+            
+            if selected_teams:
+                team_data = cluster_data_clusterizado[cluster_data_clusterizado['club_name'].isin(selected_teams)]
+                distribution_by_cluster(team_data, selected_teams)
+            
+            st.subheader("📊 Comparativo | Gols Marcados X Sofridos")
+            
+            gols_marcados_levados(cluster_data_clusterizado)
+            
+            st.subheader("📊 Distribuição | Vitórias, Derrotas e Empates")
+            
+            cols = st.columns(qtd_clusters)
+            
+            with cols[0]:
+                treemap(cluster_data_clusterizado, 0, "Cluster 0")
+            with cols[1]:
+                treemap(cluster_data_clusterizado, 1, "Cluster 1")
+            with cols[2]:
+                treemap(cluster_data_clusterizado, 2, "Cluster 2")
+            
+            st.subheader("📊 Distribuição de Assistências por Cluster")
 
-        plot_assists_boxplot(cluster_data_clusterizado)
+            plot_assists_boxplot(cluster_data_clusterizado)
+            
+            st.subheader("📊 Cartões Amarelos e Vermelhos")
+            cards_grafic(cluster_data_clusterizado, 'cluster', ['yellow_cards', 'red_cards'])
+            
+            st.subheader("📊 Distribuição de formações por Cluster")
+            formacoes_taticas(cluster_data_clusterizado, qtd_clusters)
         
+custom_palette = [
+        '#F05A28',  # Laranja Escuro
+        '#40A578',  # Amarelo Dourado
+        '#E4003A',  # Amarelo Claro
+        '#F46D25',  # Laranja Vibrante
+        '#F7931E',  # Laranja Brilhante
+        '#FFF0BC',  # Amarelo Suave
+        '#F6A623',  # Laranja Claro
+    ]
+
+
+# GRÁFICO DE DISTRIBUIÇÃO DOS TIMES
+def distribution_by_cluster(data, team_names):
+    fig = go.Figure()
+      
+    for i, team_name in enumerate(team_names):
+        team_data = data[data['club_name'] == team_name]
+        cluster_counts = team_data['cluster'].value_counts().sort_index()
         
-          
+        fig.add_trace(go.Bar(
+            x=cluster_counts.index,
+            y=cluster_counts.values,
+            name=team_name,
+            hovertemplate=f'Time: {team_name}<br>Cluster: %{{x}}<br>Número de Ocorrências: %{{y:.0f}}<extra></extra>',
+            marker_color=custom_palette[i % len(custom_palette)]  # Aplica uma cor customizada
+        ))
+    
+    fig.update_layout(
+        yaxis_title='Número de Ocorrências',
+        barmode='group',  
+        xaxis=dict(
+            tickmode='array',
+            tickvals=list(range(len(data['cluster'].unique()))),
+            ticktext=[f'Cluster {i}' for i in sorted(data['cluster'].unique())]  # Ordena os clusters de forma ascendente
+        ),
+        legend=dict(
+            orientation='h',  # Define a orientação da legenda para horizontal
+            yanchor='top',  # Alinha a parte superior da legenda com o topo do gráfico
+            y=-0.2,  # Ajusta a posição vertical da legenda para fora do gráfico
+            xanchor='center',  # Alinha a legenda no centro horizontalmente
+            x=0.5  # Posiciona a legenda no centro horizontalmente
+        ),
+        margin=dict(
+            l=40,
+            r=30,
+            b=150,  # Aumenta o espaço inferior para acomodar a legenda
+            t=50  # Ajusta o espaço superior para o título
+        ),
+        yaxis=dict(
+            title='Número de Ocorrências',
+            tickformat='d'  
+        )
+    )
+    
+    st.plotly_chart(fig)
+
+@st.cache_data
+def formacoes_taticas(data, qtd_clusters):
+    if 'club_formation' not in data.columns:
+        st.error("A coluna 'club_formation' não existe no DataFrame.")
+        return
+
+    color_map = {
+        'yellow_cards': '#ffde4d',
+        'red_cards': '#D9534F'
+    }
+
+    # Contar a quantidade de cada categoria de formação por cluster
+    formation_counts = data.groupby(['cluster', 'club_formation']).size().reset_index(name='count')
+
+    # Criar DataFrame com todas as combinações possíveis de clusters e categorias de formação
+    all_clusters = pd.DataFrame({'cluster': range(qtd_clusters)})
+    all_categories = pd.DataFrame({'club_formation': ['Ofensiva', 'Defensiva', 'Equilibrada', 'Outras']})
+    all_combinations = all_clusters.merge(all_categories, how='cross')
+
+    # Garantir que todas as combinações estão presentes no DataFrame final
+    formation_counts = pd.merge(all_combinations, formation_counts, on=['cluster', 'club_formation'], how='left').fillna(0)
+
+    # Adicionar rótulos aos clusters
+    formation_counts['cluster_label'] = 'Cluster ' + formation_counts['cluster'].astype(str)
+    
+    # Criar o gráfico
+    fig = px.bar(formation_counts, x='cluster_label', y='count', color='club_formation',
+                 labels={'cluster_label': '', 'count': 'Count', 'club_formation': 'Categoria de Formação'},
+                 barmode='group',
+                 color_discrete_sequence=custom_palette)
+
+    fig.update_layout(
+        legend=dict(
+            title=None,
+            orientation='h',  # Define a orientação da legenda para horizontal
+            yanchor='top',  # Alinha a parte superior da legenda com o topo do gráfico
+            y=-0.2,  # Ajusta a posição vertical da legenda para fora do gráfico
+            xanchor='center',  # Alinha a legenda no centro horizontalmente
+            x=0.5 
+    ))
+
+    st.plotly_chart(fig)
+
+@st.cache_data
+def cards_grafic(data, cluster_column, columns_to_plot):
+    if cluster_column not in data.columns:
+        st.error(f"A coluna '{cluster_column}' não existe no DataFrame.")
+        return
+    
+    fig = go.Figure()
+
+    color_map = {
+        'yellow_cards': '#FFB200',  
+        'red_cards': '#E4003A'      
+    }
+
+    for column in columns_to_plot:
+        if column not in data.columns:
+            st.warning(f"A coluna '{column}' não existe no DataFrame.")
+            continue
+        
+        cluster_means = data.groupby(cluster_column)[column].mean().reset_index()
+
+        fig.add_trace(go.Bar(
+            x=cluster_means[cluster_column].astype(str), 
+            y=cluster_means[column],
+            name='Cartões amarelos' if column == 'yellow_cards' else 'Cartões vermelhos',
+            marker_color=color_map.get(column, 'blue')  
+        ))
+
+    fig.update_layout(
+        yaxis_title='Count',
+        barmode='stack',  
+        xaxis=dict(
+            tickmode='array',
+            tickvals=[str(i) for i in range(len(cluster_means[cluster_column].unique()))],  
+            ticktext=[f'Cluster {i}' for i in range(len(cluster_means[cluster_column].unique()))]  
+        ),
+        legend=dict(
+            title=None,
+            orientation='h',
+            yanchor='top',
+            y=-0.2,
+            xanchor='center',
+            x=0.5 
+        )
+    )
+
+    st.plotly_chart(fig)
+
+
 @st.cache_data
 def gols_marcados_levados(data, cluster_column='cluster', columns_to_plot=['goals', 'suffered_goals']):
     if cluster_column not in data.columns:
@@ -140,7 +344,13 @@ def gols_marcados_levados(data, cluster_column='cluster', columns_to_plot=['goal
             tickvals=[str(i) for i in data[cluster_column].unique()],
             ticktext=[f'Cluster {i}' for i in data[cluster_column].unique()]
         ),
-        legend_title='Tipo de Gol',
+        legend=dict(
+            orientation='h',  # Define a orientação da legenda para horizontal
+            yanchor='top',  # Alinha a parte superior da legenda com o topo do gráfico
+            y=-0.2,  # Ajusta a posição vertical da legenda para fora do gráfico
+            xanchor='center',  # Alinha a legenda no centro horizontalmente
+            x=0.5  # Posiciona a legenda no centro horizontalmente
+        ),
         template='simple_white',  # Opção de template para um visual limpo
         margin=dict(
             l=40,
@@ -188,7 +398,7 @@ def treemap(df, cluster, title):
     st.plotly_chart(fig)
     
     # Adiciona o título abaixo do gráfico
-    st.markdown(f"<h6 style='text-align: center; margin-top:-15px'>{title}</h6>", unsafe_allow_html=True)
+    st.markdown(f"<h6 style='text-align: center; margin-top:-18px,'>{title}</h6>", unsafe_allow_html=True)
     
 def plot_assists_boxplot(df):
     # Mapeamento das cores para cada cluster com cores sólidas e padrão
@@ -224,11 +434,12 @@ def metodo_cotovelo(dados_clusterizacao):
     for n_clus in n_clusters:
         distortions.append(KMeans(n_clusters=n_clus, max_iter=10_000, n_init=100, random_state=61658).fit(dados_clusterizacao).inertia_)
 
-    fig = go.Figure(data=go.Scatter(x=n_clusters, y=distortions))
+    fig = go.Figure(data=go.Scatter(x=n_clusters, y=distortions, line=dict(color='#F46D25')))
     fig.update_layout(
+        
         xaxis_title='Number of clusters',
         yaxis_title='Inertia',
-        title='Elbow Curve'
+        title='Elbow Curve',
     )
     st.plotly_chart(fig)
         
