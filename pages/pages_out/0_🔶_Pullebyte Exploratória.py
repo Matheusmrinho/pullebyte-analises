@@ -15,10 +15,6 @@ def build_header():
     '''
     st.markdown(text, unsafe_allow_html=True)
 
-# def load_data():
-#     data = pd.read_parquet("DataSet Project\DataSets Parquet\merge_keyStates_clubs.parquet.parquet")
-#     return data
-
 def  lista_parquet():
     diretorio = "DataSet Project/football-transfermarkt-dataset-01/parquet/"
     return [i for i in os.listdir(diretorio) if i.endswith('.parquet')]
@@ -34,11 +30,8 @@ def building_profile(caminho,arquivo):
     profile = ProfileReport(df,title=f"{arquivo} Dataset")
     profile.to_file(f"reports/{nome_dataframe}.html")
     st.session_state[arquivo] = df
-    # st.write(profile.to_file)
-    # st.write(st.session_state[arquivo])
 
 def build_body():
-    # data = load_data()
     st.subheader("Selecione o dataset:")
     col1, col2 = st.columns([.3,.7])
     caminho = "DataSet Project/football-transfermarkt-dataset-01/parquet/"
@@ -66,8 +59,5 @@ def main():
     build_header()
     build_body()
     mostrar_profile()
-    #if st.checkbox("Dados a partir do merge"):
-    #    st.subheader("Dados brutos")
-    #    st.write(data)
 if __name__ == "__main__":
     main()

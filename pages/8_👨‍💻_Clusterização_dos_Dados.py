@@ -1,3 +1,5 @@
+from sklearn.metrics import silhouette_samples, silhouette_score
+import numpy as np
 import streamlit as st
 import pandas as pd
 from sklearn.cluster import KMeans
@@ -96,6 +98,8 @@ def main():
     st.write("Aplicamos o algoritmo KMeans para agrupar as observações em clusters, com as variáveis categóricas dummyficadas.")
     dados_clusterizacao = st.selectbox("Selecione o tipo dado utilizado na clusterizacao", ["Selecione", "Normalizado", "Padronizado"])
     
+    qtd_clusters = st.slider("Após analise, quantos clusters você quer separar?", value=3, min_value=2, max_value=8)
+    
     df = None
     
     if dados_clusterizacao in ["Normalizado", "Padronizado"]:
@@ -103,11 +107,10 @@ def main():
             df = load_data(r"DataSet Project/clustering/data/merge_normalized_dummy.parquet")
         elif dados_clusterizacao == "Padronizado":
             df = load_data(r"DataSet Project/clustering/data/merge_standardized_dummy.parquet")
+        
         metodo_cotovelo(df)
 
-    
-        
-        qtd_clusters = st.number_input("Após analise, quantos clusters você quer separar?", min_value=2, max_value=14, value=3)
+        grafico_silhueta(df, qtd_clusters)
         
         st.header("🫧 Clusterização")
         st.write("Após a identificação do número de clusters ideal, aplicamos o algoritmo KMeans para clusterizar os dados.")
@@ -440,6 +443,66 @@ def metodo_cotovelo(dados_clusterizacao):
         title='Elbow Curve',
     )
     st.plotly_chart(fig)
+    
+def grafico_silhueta(df, n_clusters=3):
+    # Ajustar o KMeans ao DataFrame df
+    kmeans = KMeans(n_clusters=n_clusters, random_state=0)
+    cluster_labels = kmeans.fit_predict(df)
+
+    # Calcular a pontuação média de Silhouette
+    silhouette_avg = silhouette_score(df, cluster_labels)
+
+    # Calcular as pontuações de Silhouette para cada ponto
+    sample_silhouette_values = silhouette_samples(df, cluster_labels)
+
+    y_lower = 10
+    silhouette_data = []
+
+    for i in range(n_clusters):
+        # Agregar as pontuações de silhouette para o cluster i e ordenar
+        ith_cluster_silhouette_values = sample_silhouette_values[cluster_labels == i]
+        ith_cluster_silhouette_values.sort()
+
+        size_cluster_i = ith_cluster_silhouette_values.shape[0]
+        y_upper = y_lower + size_cluster_i
+
+        color = px.colors.qualitative.Plotly[i % len(px.colors.qualitative.Plotly)]
+
+        # Adicionar dados ao gráfico
+        silhouette_data.append(go.Scatter(
+            x=ith_cluster_silhouette_values,
+            y=np.arange(y_lower, y_upper),
+            mode='lines',
+            fill='tozerox',
+            fillcolor=color,
+            line=dict(color=color),
+            name=f'Cluster {i}'
+        ))
+
+        y_lower = y_upper + 10
+
+    # Linha vertical para a pontuação média de silhouette de todos os valores
+    silhouette_data.append(go.Scatter(
+        x=[silhouette_avg, silhouette_avg],
+        y=[0, y_lower],
+        mode='lines',
+        line=dict(color='red', dash='dash'),
+        name='Média Silhouette'
+    ))
+
+    # Layout do gráfico
+    layout = go.Layout(
+        title=None,
+        xaxis=dict(title="Valores de Silhouette", range=[-0.1, 1.0]),
+        yaxis=dict(title="Cluster", showticklabels=False),
+        showlegend=True
+    )
+
+    fig = go.Figure(data=silhouette_data, layout=layout)
+
+    # Exibir o gráfico no Streamlit
+    st.plotly_chart(fig)
+    st.write(f"Pontuação Média de Silhouette: {silhouette_avg:.4f}")
         
 @st.cache_data
 def get_cluster_data(dados_clusterizacao, qtd_clusters):
