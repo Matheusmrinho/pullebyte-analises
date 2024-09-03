@@ -108,4 +108,4 @@ with open('model_results.pkl', 'wb') as f:
     pickle.dump(results, f)
 
 print("Model training complete. Results saved in 'model_results.pkl'.")
-print(results['Test Report'].keys())
+print(results[model]['Test Report'].keys())

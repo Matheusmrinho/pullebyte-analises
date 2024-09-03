@@ -402,6 +402,7 @@ def treemap(df, cluster, title):
     # Adiciona o título abaixo do gráfico
     st.markdown(f"<h6 style='text-align: center; margin-top:-18px,'>{title}</h6>", unsafe_allow_html=True)
     
+
 def plot_assists_boxplot(df):
     # Mapeamento das cores para cada cluster com cores sólidas e padrão
     color_map = {
@@ -410,23 +411,41 @@ def plot_assists_boxplot(df):
         2: '#d62728'   # Vermelho padrão
     }
     
+    # Selecionar a orientação do boxplot
+    orientation = st.selectbox("Escolha a orientação do boxplot", ["Vertical", "Horizontal"])
+
     # Criando o box plot com Plotly
-    fig = px.box(df, x="cluster", y="assists", color="cluster",
-                 color_discrete_map=color_map,
-                 labels={"assists": "Assistências"},
-                 template="plotly_white")  # Tema claro
-
-    # Customizando o layout do gráfico
-    fig.update_layout(
-        xaxis_title="Cluster",
-        yaxis_title="Quantidade de Assist.",
-        xaxis_title_font_size=16,
-        yaxis_title_font_size=16,
-        showlegend=True
-    )
-
+    if orientation == "Vertical":
+        fig = px.box(df, x="cluster", y="assists", color="cluster",
+                     color_discrete_map=color_map,
+                     labels={"assists": "Assistências"},
+                     template="plotly_white")  # Tema claro
+        fig.update_layout(
+            xaxis_title="Cluster",
+            yaxis_title="Quantidade de Assist.",
+            xaxis_title_font_size=16,
+            yaxis_title_font_size=16,
+            showlegend=True
+        )
+    elif orientation == "Horizontal":
+        fig = px.box(df, x="assists", y="cluster", color="cluster",
+                     color_discrete_map=color_map,
+                     labels={"assists": "Assistências"},
+                     template="plotly_white",
+                     orientation = "h"
+                     )
+                    
+        fig.update_layout(
+            xaxis_title="Quantidade de Assist.",
+            yaxis_title="Cluster",
+            xaxis_title_font_size=16,
+            yaxis_title_font_size=16,
+            showlegend=True
+        )
+    
     # Exibindo o gráfico no Streamlit
     st.plotly_chart(fig)
+
     
 @st.cache_data
 def metodo_cotovelo(dados_clusterizacao):
@@ -504,6 +523,7 @@ def grafico_silhueta(df, n_clusters=3):
     st.plotly_chart(fig)
     st.write(f"Pontuação Média de Silhouette: {silhouette_avg:.4f}")
         
+
 @st.cache_data
 def get_cluster_data(dados_clusterizacao, qtd_clusters):
     df_default = load_data(r"DataSet Project/clustering/data/merge_filtred_default.parquet")
