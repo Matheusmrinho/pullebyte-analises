@@ -93,31 +93,35 @@ def main():
         
     st.write(df.to_html(index=False, escape=False), unsafe_allow_html=True)
 
-    st.header("🦾 Método do Cotovelo")
-    st.write("Utilizamos o método do cotovelo para determinar o número ideal de clusters.")
-    st.write("Aplicamos o algoritmo KMeans para agrupar as observações em clusters, com as variáveis categóricas dummyficadas.")
+    st.divider()
+
+    # st.write("Utilizamos o método do cotovelo para determinar o número ideal de clusters.")
+    # st.write("Aplicamos o algoritmo KMeans para agrupar as observações em clusters, com as variáveis categóricas dummyficadas.")
+    st.header("🪐 Selção de dados para análise")
+    st.write("Após análises, foi identificado que os dados padronizados são mais adequados para a clusterização.")
     dados_clusterizacao = st.selectbox("Selecione o tipo dado utilizado na clusterizacao", ["Selecione", "Normalizado", "Padronizado"])
     
-    qtd_clusters = st.slider("Após analise, quantos clusters você quer separar?", value=3, min_value=2, max_value=8)
+    # qtd_clusters = st.slider("Após analise, quantos clusters você quer separar?", value=3, min_value=2, max_value=8)
+    qtd_clusters = 3
     
     df = None
     
     if dados_clusterizacao in ["Normalizado", "Padronizado"]:
         if dados_clusterizacao == "Normalizado":
-            df = load_data(r"DataSet Project/clustering/data/merge_normalized_dummy.parquet")
+            df = load_data(r"DataSet Project/clustering/clustered-data/clustered_data_normalized.parquet")
         elif dados_clusterizacao == "Padronizado":
-            df = load_data(r"DataSet Project/clustering/data/merge_standardized_dummy.parquet")
+            df = load_data(r"DataSet Project/clustering/clustered-data/clustered_data_standardized.parquet")
         
-        metodo_cotovelo(df)
+        # metodo_cotovelo(df)
 
-        grafico_silhueta(df, qtd_clusters)
+        # grafico_silhueta(df, qtd_clusters)
         
         st.header("🫧 Clusterização")
         st.write("Após a identificação do número de clusters ideal, aplicamos o algoritmo KMeans para clusterizar os dados.")
         st.write("Abaixo, apresentamos os dados clusterizados: ")
         
         if dados_clusterizacao:
-            cluster_data_clusterizado = get_cluster_data(df, qtd_clusters)
+            cluster_data_clusterizado = df
             cluster_data_clusterizado = categorize_formations(cluster_data_clusterizado)
             st.dataframe(cluster_data_clusterizado)
             
