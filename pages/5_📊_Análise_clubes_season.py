@@ -14,13 +14,7 @@ appearances = pd.read_parquet('DataSet Project/football-transfermarkt-dataset-01
 appearances['date'] = pd.to_datetime(appearances['date'])
 player_valuations = pd.read_parquet('DataSet Project/football-transfermarkt-dataset-01/parquet/player_valuations.parquet')
 player_valuations['date'] = pd.to_datetime(player_valuations['date'])
-st.set_page_config(
-    page_title = "Pullebyte - Análises",
-    layout = "wide",
-    menu_items = {
-        'About': "Analise realizada da champions league com base nos datasets disponiveis no kaggle referente as temporadas <= 2022"
-    }
-)
+
 @st.cache_data
 def player_market_value_plot(player_name):
     pid = players[players.name == player_name].player_id.values[0]
@@ -150,7 +144,9 @@ def get_squad_stats(local_games, club_id, season):
             
         col_order = ['club_id', 'club_name',  'season', 'season_start_date', 'season_finish_date', 'player_id', 'player_name', 'games', 'minutes_played', 'yellow_cards', 'red_cards', 'goals', 'assists', 'pre_market_value', 'post_market_value']
         return pd.concat([player_stats_, pd.DataFrame({'player_id' : player_idx, 'pre_market_value' : pre_value, 'post_market_value' : post_value}).set_index('player_id')], axis = 1).reset_index()[col_order]
-club_values = st.selectbox('Select a country', [x for x in competitions.country_name.unique()])
+
+
+club_values = st.selectbox('Select a country', [x for x in competitions.country_name.unique()], index=5)
 club_values_ES = clubs_valuation(club_values, verbose=False)
 
 # Verificar se a coluna 'club_id' está presente
@@ -158,6 +154,9 @@ club_values_ES['points'] = 2 * club_values_ES.win + club_values_ES.draw
 club_values_ES['points_percent'] = club_values_ES.points / (2 * club_values_ES.games)
 pivot_table = pd.pivot_table(data=club_values_ES, index='club_name', columns='season', values='points_percent')
 norm_values = pivot_table.apply(lambda x: (x - np.min(x)) / (np.max(x) - np.min(x)), axis=1).fillna(0)
+
+
+
 st.markdown('### Performance dos clubes por temporada')
 fig = px.imshow(norm_values, 
                 labels=dict(x="Season", y="Club Name", color="Points Percent"),
@@ -170,7 +169,7 @@ fig.update_layout(
         xaxis_title="Temporada",
         yaxis_title="Nome do Clubes",
         coloraxis_colorbar=dict(title="Pontos Percentuais"),
-        width=1000,
+        width=800,
         height=500
     )    
 st.plotly_chart(fig)
@@ -181,7 +180,7 @@ club_values_ES['value_diff'] = club_values_ES.pre_market_value - club_values_ES.
 club_list_ES = club_values_ES['club_name'].unique().tolist()
 st.markdown('### Valorização dos clubes por temporada')
     # Widget para selecionar os clubes a serem comparados
-selected_clubs = st.multiselect('Selecione os clubes para comparar', club_list_ES, default=club_list_ES[:3])
+selected_clubs = st.multiselect('Selecione os clubes para comparar', club_list_ES, default=club_list_ES[1:3])
     # Criar a tabela dinâmica
 values_ES = pd.pivot_table(data=club_values_ES, index='club_name', columns='season', values=['points_percent', 'value_diff']).T
 
@@ -193,7 +192,7 @@ fig1 = px.line(value_diff_data, x='season', y=selected_clubs, markers=True,
                labels={'value': 'Diferença de Valores'}, title='Diferença de valor dos clubes por temporada', 
                line_shape='spline',
                color_discrete_sequence=px.colors.qualitative.Set2,
-               width=1000,
+               width=800,
                height=500)
 
 # Exibir o gráfico
