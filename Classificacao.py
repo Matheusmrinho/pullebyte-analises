@@ -10,14 +10,14 @@ from sklearn.compose import ColumnTransformer
 from imblearn.under_sampling import RandomUnderSampler
 import pickle
 
-# Carregando os dados
+
 players = pd.read_parquet('DataSet Project/transfermarkrt-dados-clean/players.parquet')
 appearances = pd.read_parquet('DataSet Project/transfermarkrt-dados-clean/appearances.parquet')
 clubs = pd.read_parquet('DataSet Project/transfermarkrt-dados-clean/clubs.parquet')
 games = pd.read_parquet('DataSet Project/transfermarkrt-dados-clean/games.parquet')
 events = pd.read_parquet('DataSet Project/transfermarkrt-dados-clean/game_events.parquet')
 
-# Realizando merges e pré-processamento
+
 df1 = pd.merge(games, appearances, on='game_id', how='left')
 
 df_gol_minuto = appearances.groupby('player_id')[['goals', 'minutes_played']].sum().reset_index()
@@ -29,23 +29,24 @@ df_faltas_jogo = appearances.groupby(['player_id', 'game_id'])[['faltas', 'minut
 df_faltas_jogo['media_faltas_jogo'] = df_faltas_jogo['faltas'] / df_faltas_jogo['minutes_played']
 df = pd.merge(df, df_faltas_jogo, on=['player_id', 'game_id'], how='left')
 
-# Definindo a variável target
+
 definir_resultado = lambda home_goals, away_goals: 1 if home_goals > away_goals else (-1 if home_goals < away_goals else 0)
 df['target'] = df.apply(lambda x: definir_resultado(x['home_club_goals'], x['away_club_goals']), axis=1)
 
-# Selecionando as features
+
 features = ['media_gols_minuto', 'media_faltas_jogo', 'assists', 'home_club_formation', 'away_club_formation']
 X = df[features]
 y = df['target']
 
-# Dividindo os dados em treino e teste
+
+
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-# Identificando features numéricas e categóricas
+
 numeric_features = X_train.select_dtypes(include=['number']).columns.tolist()
 non_numeric_features = X_train.select_dtypes(exclude=['number']).columns.tolist()
 
-# Criando pipelines de transformação
+
 numeric_transformer = Pipeline(steps=[
     ('imputer', SimpleImputer(strategy='median')),
     ('scaler', StandardScaler())
@@ -66,15 +67,15 @@ preprocessing_pipeline = Pipeline(steps=[
     ('preprocessor', preprocessor)
 ])
 
-# Aplicando o pré-processamento
+
 X_train_preprocessed = preprocessing_pipeline.fit_transform(X_train)
 X_test_preprocessed = preprocessing_pipeline.transform(X_test)
 
-# Aplicando undersampling
+
 undersampler = RandomUnderSampler(random_state=42)
 X_train_resampled, y_train_resampled = undersampler.fit_resample(X_train_preprocessed, y_train)
 
-# Treinando os modelos e coletando resultados
+
 models = {
     'Gradient Boosting': GradientBoostingClassifier(),
     'Random Forest': RandomForestClassifier(),
@@ -85,18 +86,18 @@ results = {}
 for model_name, model in models.items():
     model.fit(X_train_resampled, y_train_resampled)
     
-    # Avaliação no conjunto de treino
+    
     y_train_pred = model.predict(X_train_resampled)
     train_report = classification_report(y_train_resampled, y_train_pred, output_dict=True)
     
-    # Avaliação no conjunto de teste
+    
     y_test_pred = model.predict(X_test_preprocessed)
     test_report = classification_report(y_test, y_test_pred, output_dict=True)
     
-    # Matriz de Confusão
+    
     conf_matrix = confusion_matrix(y_test, y_test_pred)
     
-    # Salvando os resultados
+    
     results[model_name] = {
         'Train Report': train_report,
         'Test Report': test_report,
