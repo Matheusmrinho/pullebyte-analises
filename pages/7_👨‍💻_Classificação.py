@@ -96,12 +96,11 @@ st.subheader('Comparação de Métricas')
 st.plotly_chart(fig_recall, use_container_width=True)
 st.plotly_chart(fig_precision, use_container_width=True)
 
-if 'Confusion Matrix' in result:
-    st.subheader(f"Matriz de Confusão - {model_name}")
-    cm = result['Confusion Matrix']
-    disp = ConfusionMatrixDisplay(confusion_matrix=cm)
-    fig, ax = plt.subplots(figsize=(8, 6))
-    disp.plot(ax=ax, cmap='Blues', values_format='d')
-    plt.title(f'Matriz de Confusão - {model_name}')
-    st.pyplot(fig)
+class_names = ['Vitória', 'Empate', 'Derrota']  # Rótulos reais
+st.subheader(f"Matriz de Confusão - {model_name}")
+cm = result['Confusion Matrix']
+fig = px.imshow(cm, text_auto=True, aspect="equal",color_continuous_scale='Blues', labels=dict(x="Previsões", y="Resultados Reais", color="Quantidade"))
+fig.update_xaxes(tickvals=[0, 1, 2], ticktext=class_names)
+fig.update_yaxes(tickvals=[0, 1, 2], ticktext=class_names)
+st.plotly_chart(fig, use_container_width=True)
 
