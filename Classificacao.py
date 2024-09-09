@@ -102,7 +102,8 @@ for model_name, model in models.items():
     'model': model,  # Certifique-se de que o modelo está sendo armazenado
     'Train Report': train_report,
     'Test Report': test_report,
-    'Confusion Matrix': conf_matrix
+    'Confusion Matrix': conf_matrix,
+    'preprocessor': preprocessing_pipeline
 }
 
 # Salvando os resultados para uso posterior no Streamlit
