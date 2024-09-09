@@ -79,7 +79,7 @@ X_train_resampled, y_train_resampled = undersampler.fit_resample(X_train_preproc
 models = {
     'Gradient Boosting': GradientBoostingClassifier(),
     'Random Forest': RandomForestClassifier(),
-    'Support Vector Machine': SVC()
+    'Support Vector Machine': SVC(probability=True)
 }
 
 results = {}
@@ -99,14 +99,15 @@ for model_name, model in models.items():
     
     
     results[model_name] = {
-        'Train Report': train_report,
-        'Test Report': test_report,
-        'Confusion Matrix': conf_matrix
-    }
+    'model': model,  # Certifique-se de que o modelo está sendo armazenado
+    'Train Report': train_report,
+    'Test Report': test_report,
+    'Confusion Matrix': conf_matrix
+}
 
 # Salvando os resultados para uso posterior no Streamlit
 with open('model_results.pkl', 'wb') as f:
     pickle.dump(results, f)
 
 print("Model training complete. Results saved in 'model_results.pkl'.")
-print(results[model]['Test Report'].keys())
+print(results[model_name]['Test Report'].keys())
